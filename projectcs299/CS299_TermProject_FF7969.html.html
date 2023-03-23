@@ -1,0 +1,398 @@
+<!--
+Group: FF7969
+
+First Name: Naruephon
+Last Name: Boonyuang
+Student ID: 6309681333
+E-mail: naruephon.boo@dome.tu.ac.th
+
+First Name: Tamonwan
+Last Name:Promthong
+Student ID: 6309681549
+E-mail: tamonwan.pro@dome.tu.ac.th
+
+-->
+<html>
+
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dongle:wght@300&display=swap" rel="stylesheet">
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        #c {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #welcome {
+            position: absolute;
+            left: 600;
+            top: 360;
+            font-size: 100px;
+            color: white;
+            font-weight: bold;
+            font-family: 'Gaegu', cursive;
+        }
+
+        #group {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+            font-family: 'Dongle', sans-serif;
+            background-color: #FF7969;
+
+        }
+
+        #text {
+            position: absolute;
+            left: 600;
+            top: 360;
+            font-size: 60px;
+            color: white;
+            font-weight: bold;
+            font-family: 'Gaegu', cursive;
+        }
+    </style>
+
+<body>
+    <canvas id="c"></canvas>
+    <div id="group">FF7969</div>
+    <div id="welcome">WELCOME
+        <p style="font-size: 20px;"> Please press Q to hear the shark's information</p>
+    </div>
+    <div id="text"> </div>
+
+    <audio id="">
+        <script type="module">
+            import * as THREE from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/build/three.module.js';
+            import { OrbitControls } from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/examples/jsm/controls/OrbitControls.js';
+            import { GLTFLoader } from 'https://threejsfundamentals.org/threejs/resources/threejs/r132/examples/jsm/loaders/GLTFLoader.js';
+            import { GUI } from 'https://threejsfundamentals.org/threejs/../3rdparty/dat.gui.module.js';
+
+            function main() {
+                const canvas = document.querySelector('#c');
+                const renderer = new THREE.WebGLRenderer({ canvas });
+                renderer.shadowMap.enabled = true;
+                const fov = 45;
+                const aspect = 2;  // the canvas default
+                const near = 0.1;
+                const far = 1000;
+                const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+                camera.position.set(0, 10, 90);
+                camera.lookAt(0, 0, 0);
+
+                //Control mouse to update the camera angle.
+                const controls = new OrbitControls(camera, canvas);
+                controls.target.set(0, 5, 0);
+                controls.update();
+
+                const scene = new THREE.Scene(); // create the scence
+
+                {
+                    const skyColor = 0xB1E1FF;  // light blue
+                    const groundColor = 0x99ccff;  // light Sky Blue
+                    const intensity = 1.3; //intensity of light
+                    const light = new THREE.HemisphereLight(skyColor, groundColor, intensity); //create light
+                    scene.add(light); //add light
+                }
+                scene.fog = new THREE.FogExp2(0x960019, 0.01); // create red fog
+                {
+                    const color = 0xFFFFFF; //set color light
+                    const intensity = 1;
+                    const light = new THREE.DirectionalLight(color, intensity);//direction light
+                    light.castShadow = true;
+                    light.position.set(-250, 800, -850);//set position of light
+                    scene.add(light);// add light to the scence
+                    const cam = light.shadow.camera;
+                    const cameraHelper = new THREE.CameraHelper(cam);
+                    scene.add(cameraHelper);
+                    cameraHelper.visible = false; // hide model camera 
+                    const helper = new THREE.DirectionalLightHelper(light, 100);
+                    scene.add(helper);
+                    helper.visible = false; //Hide models that show the angles where the light shines.
+
+                    //Create a tool to control the angle and distance of the light.
+                    function makeXYZGUI(gui, vector3, name, onChangeFn) {
+                        const folder = gui.addFolder(name);
+                        folder.add(vector3, 'x', vector3.x - 500, vector3.x + 500).onChange(onChangeFn);
+                        folder.add(vector3, 'y', vector3.y - 500, vector3.y + 500).onChange(onChangeFn);
+                        folder.add(vector3, 'z', vector3.z - 500, vector3.z + 500).onChange(onChangeFn);
+                        folder.open();
+                    }
+
+                    function updateCamera() {
+                        // update the light target's matrixWorld
+                        light.updateMatrixWorld();
+                        light.target.updateMatrixWorld();
+                        helper.update();
+                        // update the light's shadow camera's projection matrix
+                        light.shadow.camera.updateProjectionMatrix();
+                        // update the camera helper  to show the light's shadow camera
+                        cameraHelper.update();
+                    }
+                    updateCamera();
+
+                    //put the Tool controll light 
+                    const gui = new GUI();
+                    gui.close();
+                    {
+                        const folder = gui.addFolder('Shadow Camera');
+                        folder.open();
+                    }
+                    makeXYZGUI(gui, light.position, 'position', updateCamera);//update position light 
+                    makeXYZGUI(gui, light.target.position, 'target', updateCamera);//update target light 
+                }
+
+                const mixers = [];
+                var model;
+                const Loader = new GLTFLoader();
+                Loader.load('sharkswim.glb', (gltf) => { //load model Animation shark1
+                    model = gltf.scene;
+                    const animation = gltf.animations[0];
+                    const mixer = new THREE.AnimationMixer(model);
+                    mixers.push(mixer);
+                    const action = mixer.clipAction(animation); //Animation
+                    action.play();
+                    model.position.set(0, 0, 0);
+                    model.scale.set(5, 5, 5);
+                    scene.add(model); // add model animation
+                });
+
+                const sphere = new THREE.SphereGeometry(0.5, 16, 8);//creat sphere to make point light
+                let light1 = new THREE.PointLight(0xff0040, 2, 50);
+                light1.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial({ color: 0xff0040 })));
+                scene.add(light1);//add point light to the scence
+
+                let light2 = new THREE.PointLight(0x0040ff, 2, 50);
+                light2.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial({ color: 0x0040ff })));
+                scene.add(light2);
+
+                let light3 = new THREE.PointLight(0x80ff80, 2, 50);
+                light3.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial({ color: 0x80ff80 })));
+                scene.add(light3);
+
+                let light4 = new THREE.PointLight(0xffaa00, 2, 50);
+                light4.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial({ color: 0xffaa00 })));
+                scene.add(light4);
+
+                // create model animation shark2
+                Loader.load('shark2swim.glb', (gltf) => {
+                    let model2 = gltf.scene;
+                    const animation = gltf.animations[0];
+                    const mixer = new THREE.AnimationMixer(model2);
+                    mixers.push(mixer);
+                    const action = mixer.clipAction(animation);
+                    action.play();
+                    model2.position.x += 40;
+                    model2.position.y -= 10;
+                    model2.scale.set(5, 5, 5);
+                    scene.add(model2);
+                });
+
+                // create model animation shark3
+                Loader.load('shark3swim.glb', (gltf) => {
+                    let model3 = gltf.scene;
+                    const animation = gltf.animations[0];
+                    const mixer = new THREE.AnimationMixer(model3);
+                    mixers.push(mixer);
+                    const action = mixer.clipAction(animation);
+                    action.play();
+                    model3.position.x -= 30;
+                    model3.position.y -= 20;
+                    model3.scale.set(5, 5, 5);
+                    scene.add(model3);
+                });
+
+                // create model squid
+                Loader.load('squid.glb', (gltf) => {
+                    const root = gltf.scene;
+                    root.scale.set(-1.5, -1.5, -1.5);
+                    root.position.set(20, -15, 5);
+                    scene.add(root);
+                });
+
+                // create model puffer
+                Loader.load('puffer.glb', (gltf) => {
+                    const root = gltf.scene;
+                    root.scale.set(1, 1, 1);
+                    root.position.set(35, 25, 20);
+                    scene.add(root);
+                });
+
+                let root;
+
+                // create model fish
+                Loader.load('fish.glb', (gltf) => {
+                    root = gltf.scene;
+                    root.scale.set(6, 6, 6);
+                    root.position.set(-50, 15, 5);
+                    scene.add(root);
+                });
+                const clock = new THREE.Clock();
+
+                // create sound
+                const listener = new THREE.AudioListener();
+                camera.add(listener);
+
+                // create a global audio source
+                const sound = new THREE.Audio(listener);
+                const sound1 = new THREE.Audio(listener);
+
+                //load a sound and set it as the Audio object's buffer
+                const audioLoader = new THREE.AudioLoader();
+                audioLoader.load('babyShark.ogg', function (buffer) {
+                    sound1.setBuffer(buffer);
+                    sound1.setLoop(true);
+                    sound1.setVolume(0.005);
+                    sound1.play();
+                });
+
+                camera.add(listener);
+                audioLoader.load('information.mp3', function (buffer) {
+                    sound.setBuffer(buffer);
+                    sound.setLoop(true);
+                    sound.setVolume(0.2);
+                    document.addEventListener('keydown', function (event) { // set keyboard keys control audio
+                        if (!sound.isPlaying) {
+                            if (event.key == 'q' || event.key == 'Q') {
+                                sound.play();
+                            }
+                        }
+                        else if (sound.isPlaying) {
+                            if (event.key == 'q' || event.key == 'Q') {
+                                sound.pause();
+                            }
+                        }
+                    });
+                });
+
+                {
+                    const loader = new THREE.CubeTextureLoader(); // creat sky box
+                    const texture = loader.load([
+                        'uw_ft.jpg',
+                        'uw_bk.jpg',
+                        'uw_up.jpg',
+                        'uw_dn.jpg',
+                        'uw_rt.jpg',
+                        'uw_lf.jpg',
+                    ]);
+                    scene.background = texture;
+                }
+
+                document.addEventListener("keydown", onDocumentKeyDown, false);// control model with keyboard keys
+                function onDocumentKeyDown(event) {
+                    document.getElementById('welcome').innerHTML = "";
+                    document.getElementById('text').innerHTML = "";
+                    var keyCode = event.which;
+                    if (keyCode == 87) {        //w
+                        model.position.y += 0.5; //chang position y positive with distanance 0.5    
+                    }
+                    else if (keyCode == 83) {   //s
+                        model.position.y -= 0.5;//chang position y negatipe with distanance 0.5 
+                    }
+                    else if (keyCode == 65) {   //a
+                        model.position.x -= 0.5; //chang position x negatipe with distanance 0.5 
+                    }
+                    else if (keyCode == 68) {   //d
+                        model.position.x += 0.5; //chang position x positive with distanance 0.5 
+                    }
+                    render();
+                };
+
+                const raycaster = new THREE.Raycaster();
+                const clickMouse = new THREE.Vector2();
+                window.addEventListener('click', event => {
+
+
+                    clickMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                    clickMouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+                    raycaster.setFromCamera(clickMouse, camera);
+                    const found = raycaster.intersectObjects(scene.children, true);
+
+                    console.log(found);
+
+                    if (found.length > 0) {
+                        if (found[0].object.id == 81) {
+                            document.getElementById('welcome').innerHTML = "";
+                            document.getElementById('text').innerHTML = "Hammerhead shark";
+                        } else if (found[0].object.id == 37) {
+                            document.getElementById('welcome').innerHTML = "";
+                            document.getElementById('text').innerHTML = "Hammerhead shark";
+                        } else if (found[0].object.id == 83) {
+                            document.getElementById('welcome').innerHTML = "";
+                            document.getElementById('text').innerHTML = "Blacktip reef shark";
+                        } else if (found[0].object.id == 35) {
+                            document.getElementById('welcome').innerHTML = "";
+                            document.getElementById('text').innerHTML = "Leopard shark";
+                        }
+                    }
+
+                });
+
+                //resize Render To Display Size
+                function resizeRendererToDisplaySize(renderer) {
+                    const canvas = renderer.domElement;
+                    const width = canvas.clientWidth;
+                    const height = canvas.clientHeight;
+                    const needResize = canvas.width !== width || canvas.height !== height;
+                    if (needResize) {
+                        renderer.setSize(width, height, false);
+                    }
+                    return needResize;
+                }
+                function render() {
+                    const time = Date.now() * 0.0005; // set time to move light
+                    const del = clock.getDelta();
+
+                    //root.position.x  = 50 * del;
+
+                    if (model) { model.rotation.y -= 0.5 * del; }
+                    //calculate position of light to rotate light to aroung the model 
+                    light1.position.x = Math.sin(time * 0.7) * 30;
+                    light1.position.y = Math.cos(time * 0.5) * 40;
+                    light1.position.z = Math.cos(time * 0.3) * 30;
+
+                    light2.position.x = Math.cos(time * 0.3) * 30;
+                    light2.position.y = Math.sin(time * 0.5) * 40;
+                    light2.position.z = Math.sin(time * 0.7) * 30;
+
+                    light3.position.x = Math.sin(time * 0.7) * 30;
+                    light3.position.y = Math.cos(time * 0.3) * 40;
+                    light3.position.z = Math.sin(time * 0.5) * 30;
+
+                    light4.position.x = Math.sin(time * 0.3) * 30;
+                    light4.position.y = Math.cos(time * 0.7) * 40;
+                    light4.position.z = Math.sin(time * 0.5) * 30;
+
+
+                    if (resizeRendererToDisplaySize(renderer)) {
+                        const canvas = renderer.domElement;
+                        camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                        camera.updateProjectionMatrix();
+                    }
+                    renderer.render(scene, camera);
+                    const delta = clock.getDelta();
+                    mixers.forEach((mixer) => {
+                        mixer.update(delta);
+                    });
+                    requestAnimationFrame(render);
+                }
+                requestAnimationFrame(render);
+            }
+            main();
+        </script>
+</body>
+
+</html>
